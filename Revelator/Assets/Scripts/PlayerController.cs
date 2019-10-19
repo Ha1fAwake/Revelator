@@ -6,6 +6,8 @@ using UnityEngine;
 /// </summary>
 public class PlayerController : MonoBehaviour
 {
+    public static int faceDirection;        // 角色朝向，0左1右
+
     //public float walkSpeed = 3.0f;         // 步行速度
     //public float runSpeed = 5.0f;          // 跑步速度
     public float pressInterval = 0.5f;      // 双击按键的有效时间间隔
@@ -30,7 +32,6 @@ public class PlayerController : MonoBehaviour
     private float releaseATime = .0f;       // 松开A键时间
     private float releaseDTime = .0f;
     private bool exStepEnabled = true;      // 能否使用瞬步
-    private int faceDirection;              // 角色朝向，0左1右
     private bool onFloor = true;            // 角色是否在地上
     private int jumpTimer = 0;              // 跳跃计数器
 
