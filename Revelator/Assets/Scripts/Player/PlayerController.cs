@@ -210,7 +210,8 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKeyUp(KeyCode.J))
         {
-            normalAttack.SetActive(false);
+            normalAtkCounter = 0;
+            Debug.Log("end attack");
         }
     }
 
@@ -221,6 +222,7 @@ public class PlayerController : MonoBehaviour
             normalAttack.SetActive(true);
             lastNormalAtkTime = Time.time;
         }
+        normalAttack.SetActive(false);
     }
 
     private void TwiceAttack()
