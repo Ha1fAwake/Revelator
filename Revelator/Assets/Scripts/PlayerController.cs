@@ -23,6 +23,7 @@ public class PlayerController : MonoBehaviour
     public float maxFloatSpeed = 2.0f;      // 最大腾空微调速度
 
     private Rigidbody2D rgb;
+    private Animator anim;
     private SpriteRenderer sr;
     private Color originColor;
     private float pressATime;               // 按下A键时间
@@ -36,6 +37,7 @@ public class PlayerController : MonoBehaviour
     private void Awake()
     {
         rgb = this.GetComponent<Rigidbody2D>();
+        anim = this.GetComponentInChildren<Animator>();
         sr = this.GetComponent<SpriteRenderer>();
         originColor = sr.color;
     }
@@ -163,8 +165,10 @@ public class PlayerController : MonoBehaviour
             {
                 //transform.Rotate(new Vector3(0, 0, 1), 120);    // 前空翻360度（播放前空翻动画）
                 sr.color = new Color(0, 1, 0.5f);
+                anim.SetBool("doubleJump", true);
             }
             rgb.AddForce(new Vector2(0, jumpForce_y), ForceMode2D.Impulse);
+            anim.SetBool("doubleJump", false);
         }
     }
 
