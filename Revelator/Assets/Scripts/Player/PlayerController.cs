@@ -6,14 +6,12 @@ using UnityEngine;
 /// </summary>
 public class PlayerController : MonoBehaviour
 {
-    public static int faceDirection;        // 角色朝向，0左1右
-
+    #region 移动控制变量
     //public float walkSpeed = 3.0f;         // 步行速度
     //public float runSpeed = 5.0f;          // 跑步速度
     public float pressInterval = 0.5f;      // 双击按键的有效时间间隔
     public float exStepDistance = 3.0f;     // 瞬步距离（速度)
     public float exStepCD = 5.0f;           // 瞬步技能CD
-    public float lastExStepTime = 0.0f;     // 记录上一次使用瞬步的时间
     public float jumpForce_y = 5.0f;        // 弹跳力
     public float floatForce_x = 1.0f;       // 空中微调的漂浮力度（速度不能与重力叠加）
     public float walkForce_x = 3.0f;        // 步行力度
@@ -22,6 +20,7 @@ public class PlayerController : MonoBehaviour
     public float maxRunSpeed = 5.0f;        // 最高跑步速度
     public float maxFloatSpeed = 2.0f;      // 最大腾空微调速度
 
+    private bool positiveFace;              // 是否朝着正向（右为正）
     private Rigidbody2D rgb;
     private Animator anim;
     private SpriteRenderer sr;
@@ -31,24 +30,52 @@ public class PlayerController : MonoBehaviour
     private float releaseATime = .0f;       // 松开A键时间
     private float releaseDTime = .0f;
     private bool exStepEnabled = true;      // 能否使用瞬步
+    private float lastExStepTime = 0.0f;     // 记录上一次使用瞬步的时间
     private bool onFloor = true;            // 角色是否在地上
     private int jumpTimer = 0;              // 跳跃计数器
+    #endregion
+
+    #region 攻击控制变量
+    public int normalDamage = 5;                // 普通攻击伤害，每段攻击伤害按照不同百分比
+    public int specialDamage = 8;               // 特殊攻击伤害
+    public float noramlDmgDistance = 1.0f;      // 普通攻击距离，暂且只设置一个距离，用于测试
+    public float specialDmgDistance = 5.0f;     // 特殊攻击——瞬斩
+    public float normalAtkInterval = 0.1f;      // 普攻衔接最大时间间隔
+    public float lastNormalAtkTime = 0.0f;      // 上一次普攻时间
+
+    private GameObject normalAttack;
+    public int normalAtkCounter = 0;            // 普攻计数器
+    private int specialAtkCounter = 0;          // 特攻计数器
+    #endregion
+
+    enum STATE      // 角色的运动状态
+    {
+        WALK,
+        RUN,
+        EXSTEP,
+        JUMP,
+        DOUBLEJUMP
+    }
 
     private void Awake()
     {
         rgb = this.GetComponent<Rigidbody2D>();
-        anim = this.GetComponentInChildren<Animator>();
-        sr = this.GetComponent<SpriteRenderer>();
+        anim = this.GetComponentInChildren<Animator>();         // 图片动画相关在子物体上
+        sr = this.GetComponentInChildren<SpriteRenderer>();
         originColor = sr.color;
+
+        normalAttack = transform.GetChild(1).gameObject;        // 获取“攻击”子物体
     }
 
     private void Update()
     {
         MoveController();                           // 移动控制
         JumpController();                           // 跳跃控制
+        NormalAttack();                             // 普攻控制
+        SpecialAttack();                            // 特攻控制
     }
 
-    public void MoveController()
+    private void MoveController()
     {
         if (Input.GetKeyUp(KeyCode.A))              // 不能||D，否则快速AD也算双击有效时间
         {
@@ -66,7 +93,7 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKey(KeyCode.A))
         {
-            faceDirection = 0;  // 朝向左
+            positiveFace = false;
 
             if (onFloor)
             {// 地面上才允许步行、跑步和瞬步
@@ -111,7 +138,7 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKey(KeyCode.D))
         {
-            faceDirection = 1;  // 朝向右
+            positiveFace = true;
 
             if (onFloor)
             {
@@ -155,7 +182,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    public void JumpController()
+    private void JumpController()
     {
         if (Input.GetKeyDown(KeyCode.K) && jumpTimer < 2)
         {// 跳跃及二段跳
@@ -168,21 +195,70 @@ public class PlayerController : MonoBehaviour
                 anim.SetBool("doubleJump", true);
             }
             rgb.AddForce(new Vector2(0, jumpForce_y), ForceMode2D.Impulse);
-            anim.SetBool("doubleJump", false);
+        }
+    }
+
+    private void NormalAttack()
+    {// 普通攻击
+        if (Input.GetKeyDown(KeyCode.J))
+        {
+            normalAtkCounter++;
+        }
+        OnceAttack();
+        TwiceAttack();
+        EndAttack();
+
+        if (Input.GetKeyUp(KeyCode.J))
+        {
+            normalAttack.SetActive(false);
+        }
+    }
+
+    private void OnceAttack()
+    {// 第一段普攻
+        if (normalAtkCounter == 1)
+        {
+            normalAttack.SetActive(true);
+            lastNormalAtkTime = Time.time;
+        }
+    }
+
+    private void TwiceAttack()
+    {// 第二段普攻
+        if (normalAtkCounter == 2 && Time.time - lastNormalAtkTime <= normalAtkInterval)
+        {
+
+        }
+    }
+
+    private void EndAttack()
+    {// 第三段普攻
+        if (normalAtkCounter == 3 && Time.time - lastNormalAtkTime <= normalAtkInterval)
+        {
+
+        }
+    }
+
+    private void SpecialAttack()
+    {// 特殊攻击
+        if (Input.GetKeyDown(KeyCode.U))
+        {
+
         }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if(collision.gameObject.tag != "Floor")    // 某些物体的碰撞不可计算在内
+        if (collision.gameObject.tag != "Floor")    // 某些物体的碰撞不可计算在内
         {
             exStepEnabled = false;
         }
-        if (collision.gameObject.tag == "Floor")
+        if (collision.gameObject.tag == "Floor")    // 进行各种落地初始化
         {
             onFloor = true;
             jumpTimer = 0;
             sr.color = originColor;
+            anim.SetBool("doubleJump", false);
         }
     }
 

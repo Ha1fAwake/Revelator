@@ -12,8 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e487695307fe7b4c9f1df96615857fd, type: 3}
   m_Name: Tank
   m_EditorClassIdentifier: 
+  profile: {fileID: 21300000, guid: 4176ddfcade203741833d1606209ece3, type: 3}
   enemyName: Tank
-  description: A strong tank.
-  attack: 5
   health: 8
-  artwork: {fileID: 21300000, guid: 4176ddfcade203741833d1606209ece3, type: 3}
+  attack: 5
+  defence: 0
+  moveSpeed: 0
+  detectRadius: 3
+  attackRadius: 1
+  description: A strong tank.

@@ -6,6 +6,7 @@ using UnityEngine;
 /// </summary>
 public class PlayerAttacker : MonoBehaviour
 {
+    //public PlayerController playerController;
     public int normalDamage = 5;           // 普通攻击伤害，每段攻击伤害按照不同百分比
     public int specialDamage = 8;          // 特殊攻击伤害
     public float noramlDmgDistance = 1.0f;      // 普通攻击距离，暂且只设置一个距离，用于测试
@@ -25,6 +26,15 @@ public class PlayerAttacker : MonoBehaviour
     {
         NormalAttack();
         SpecialAttack();
+
+        //if (playerController.FaceDirection())
+        //{
+        //    Debug.Log("right");
+        //}
+        //else
+        //{
+        //    Debug.Log("left");
+        //}
     }
 
     private void NormalAttack()
@@ -33,6 +43,9 @@ public class PlayerAttacker : MonoBehaviour
         {
             normalAtkCounter++;
         }
+        OnceAttack();
+        TwiceAttack();
+        EndAttack();
     }
 
     private void OnceAttack()
@@ -40,14 +53,6 @@ public class PlayerAttacker : MonoBehaviour
         if (normalAtkCounter == 1)
         {
             lastNormalAtkTime = Time.time;
-            if (PlayerController.faceDirection == 0)
-            {// 向左攻击
-                RaycastHit2D onceDamage = Physics2D.Raycast(new Vector2(transform.position.x - 0.6f, transform.position.y), new Vector2(-1, 0), noramlDmgDistance);
-            }
-            if (PlayerController.faceDirection == 1)
-            {// 向右攻击
-                RaycastHit2D onceDamage = Physics2D.Raycast(new Vector2(transform.position.x + 0.6f, transform.position.y), new Vector2(1, 0), noramlDmgDistance);
-            }
         }
     }
 

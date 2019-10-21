@@ -12,8 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e487695307fe7b4c9f1df96615857fd, type: 3}
   m_Name: Rabbit
   m_EditorClassIdentifier: 
+  profile: {fileID: 21300000, guid: 3a88f0317127a6345aa031e75b064fad, type: 3}
   enemyName: Rabbit
-  description: A cute rabbit.
+  health: 2
   attack: 2
-  health: 5
-  artwork: {fileID: 21300000, guid: 3a88f0317127a6345aa031e75b064fad, type: 3}
+  defence: 0
+  moveSpeed: 1
+  detectRadius: 2
+  attackRadius: 0.5
+  description: A cute rabbit.
