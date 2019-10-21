@@ -16,8 +16,6 @@ public class PlayerController : MonoBehaviour
     public float lastExStepTime = 0.0f;     // 记录上一次使用瞬步的时间
     public float jumpForce_y = 5.0f;        // 弹跳力
     public float floatForce_x = 1.0f;       // 空中微调的漂浮力度（速度不能与重力叠加）
-    // 由于速度不能与重力叠加，移动方式也不能依靠改变刚体速度
-    // 不使用刚体速度就会引出运动惯性的问题
     public float walkForce_x = 3.0f;        // 步行力度
     public float runForce_x = 5.0f;         // 跑步力度
     public float maxWalkSpeed = 3.0f;       // 最高步行速度
