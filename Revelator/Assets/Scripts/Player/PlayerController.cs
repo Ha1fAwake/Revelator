@@ -7,8 +7,6 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     #region 移动控制变量
-    //public float walkSpeed = 3.0f;         // 步行速度
-    //public float runSpeed = 5.0f;          // 跑步速度
     public float pressInterval = 0.5f;      // 双击按键的有效时间间隔
     public float exStepDistance = 3.0f;     // 瞬步距离（速度)
     public float exStepCD = 5.0f;           // 瞬步技能CD
@@ -35,21 +33,9 @@ public class PlayerController : MonoBehaviour
     private int jumpTimer = 0;              // 跳跃计数器
     #endregion
 
-    #region 攻击控制变量
-    public int normalDamage = 5;                // 普通攻击伤害，每段攻击伤害按照不同百分比
-    public int specialDamage = 8;               // 特殊攻击伤害
-    public float noramlDmgDistance = 1.0f;      // 普通攻击距离，暂且只设置一个距离，用于测试
-    public float specialDmgDistance = 5.0f;     // 特殊攻击——瞬斩
-    public float normalAtkInterval = 0.1f;      // 普攻衔接最大时间间隔
-    public float lastNormalAtkTime = 0.0f;      // 上一次普攻时间
-
-    private GameObject normalAttack;
-    public int normalAtkCounter = 0;            // 普攻计数器
-    private int specialAtkCounter = 0;          // 特攻计数器
-    #endregion
-
     enum STATE      // 角色的运动状态
     {
+        Idle,
         WALK,
         RUN,
         EXSTEP,
@@ -57,22 +43,20 @@ public class PlayerController : MonoBehaviour
         DOUBLEJUMP
     }
 
-    private void Awake()
+    STATE characterState = STATE.Idle;
+
+    private void Start()
     {
         rgb = this.GetComponent<Rigidbody2D>();
         anim = this.GetComponentInChildren<Animator>();         // 图片动画相关在子物体上
         sr = this.GetComponentInChildren<SpriteRenderer>();
         originColor = sr.color;
-
-        normalAttack = transform.GetChild(1).gameObject;        // 获取“攻击”子物体
     }
 
     private void Update()
     {
         MoveController();                           // 移动控制
         JumpController();                           // 跳跃控制
-        NormalAttack();                             // 普攻控制
-        SpecialAttack();                            // 特攻控制
     }
 
     private void MoveController()
@@ -80,15 +64,13 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKeyUp(KeyCode.A))              // 不能||D，否则快速AD也算双击有效时间
         {
             releaseATime = Time.time;
-            sr.color = originColor;
-            rgb.velocity = new Vector2(0, 0);       // Stop
+            Stop();
         }
 
         if (Input.GetKeyUp(KeyCode.D))
         {
             releaseDTime = Time.time;
-            sr.color = originColor;
-            rgb.velocity = new Vector2(0, 0);
+            Stop();
         }
 
         if (Input.GetKey(KeyCode.A))
@@ -97,37 +79,14 @@ public class PlayerController : MonoBehaviour
 
             if (onFloor)
             {// 地面上才允许步行、跑步和瞬步
-                if (Input.GetKeyDown(KeyCode.LeftShift) && exStepEnabled && Time.time - lastExStepTime >= exStepCD)
-                {
-                    //sr.color = new Color(1, 1, 0);                  // 暂用变色来表示瞬步冷却时间
-                    float tempStepDistance = exStepDistance;        // 临时瞬步距离
-                    Vector3 temp = transform.position;
-                    RaycastHit2D hit = Physics2D.Raycast(new Vector2(temp.x - 0.6f, temp.y), new Vector2(-1, 0), exStepDistance);   // 使用Raycast解决穿墙问题
-                    if (hit)
-                    {// 仅通过Raycast判断还不能解决贴墙穿越的问题，需要在碰撞事件中进一步处理
-                        tempStepDistance = hit.distance;            // 重新赋值瞬步距离
-                    }
-                    transform.position = new Vector3(-tempStepDistance + temp.x, temp.y, temp.z);    // 虽然可以瞬步，但要解决穿墙的BUG
-                    lastExStepTime = Time.time;                     // 重置瞬步使用时间
-                }
-
                 pressATime = Time.time;
+
+                if (Input.GetKeyDown(KeyCode.LeftShift) && exStepEnabled && Time.time - lastExStepTime >= exStepCD)
+                    ExStep();       // 瞬步
                 if (pressATime - releaseATime <= pressInterval)
-                {
-                    //rgb.velocity = new Vector2(-runSpeed, 0);       // 跑步
-                    if(-rgb.velocity.x < maxRunSpeed)               // 不能超过最大跑步速度
-                        rgb.AddForce(new Vector2(-runForce_x, 0));
-                    sr.color = new Color(1, 0, 0);                  // 跑步状态（红色）
-                    releaseATime = Time.time;                       // 跑步状态中要持续更新松键时间
-                }
+                    Run();
                 else
-                {
-                    //rgb.velocity = new Vector2(-walkSpeed, 0);      // 步行
-                    if(-rgb.velocity.x < maxWalkSpeed)              // 不能超过最大步行速度
-                        rgb.AddForce(new Vector2(-walkForce_x, 0));
-                    //if (Time.time - lastExStepTime >= exStepCD)
-                        sr.color = originColor;                     // 若不在瞬步CD和跑步状态，显示原色
-                }
+                    Walk();
             }
 
             if (!onFloor && -rgb.velocity.x < maxFloatSpeed)        // 不能超过最大微调速度
@@ -142,37 +101,14 @@ public class PlayerController : MonoBehaviour
 
             if (onFloor)
             {
-                if (Input.GetKeyDown(KeyCode.LeftShift) && exStepEnabled && Time.time - lastExStepTime >= exStepCD)
-                {
-                    //sr.color = new Color(1, 1, 0);
-                    float tempStepDistance = exStepDistance;
-                    Vector3 temp = transform.position;
-                    RaycastHit2D hit = Physics2D.Raycast(new Vector2(temp.x + 0.6f, temp.y), new Vector2(1, 0), exStepDistance);
-                    if (hit)
-                    {
-                        tempStepDistance = hit.distance;
-                    }
-                    transform.position = new Vector3(tempStepDistance + temp.x, temp.y, temp.z);
-                    lastExStepTime = Time.time;
-                }
-
                 pressDTime = Time.time;
+
+                if (Input.GetKeyDown(KeyCode.LeftShift) && exStepEnabled && Time.time - lastExStepTime >= exStepCD)
+                    ExStep();
                 if (pressDTime - releaseDTime <= pressInterval)
-                {
-                    //rgb.velocity = new Vector2(runSpeed, 0);
-                    if (rgb.velocity.x < maxRunSpeed)
-                        rgb.AddForce(new Vector2(runForce_x, 0));
-                    sr.color = new Color(1, 0, 0);
-                    releaseDTime = Time.time;
-                }
+                    Run();
                 else
-                {
-                    //rgb.velocity = new Vector2(walkSpeed, 0);
-                    if (rgb.velocity.x < maxWalkSpeed)
-                        rgb.AddForce(new Vector2(walkForce_x, 0));
-                    //if (Time.time - lastExStepTime >= exStepCD)
-                        sr.color = originColor;
-                }
+                    Walk();
             }
 
             if (!onFloor && rgb.velocity.x < maxFloatSpeed)
@@ -198,55 +134,54 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void NormalAttack()
-    {// 普通攻击
-        if (Input.GetKeyDown(KeyCode.J))
-        {
-            normalAtkCounter++;
-        }
-        OnceAttack();
-        TwiceAttack();
-        EndAttack();
-
-        if (Input.GetKeyUp(KeyCode.J))
-        {
-            normalAtkCounter = 0;
-            Debug.Log("end attack");
-        }
+    private void Stop()
+    {// 松开A/D键
+        sr.color = originColor;
+        rgb.velocity = new Vector2(0, 0);
     }
 
-    private void OnceAttack()
-    {// 第一段普攻
-        if (normalAtkCounter == 1)
-        {
-            normalAttack.SetActive(true);
-            lastNormalAtkTime = Time.time;
-        }
-        normalAttack.SetActive(false);
+    private void ExStep()
+    {
+            //sr.color = new Color(1, 1, 0);                  // 暂用变色来表示瞬步冷却时间
+            float tempStepDistance = exStepDistance;        // 临时瞬步距离
+            Vector3 temp = transform.position;
+            RaycastHit2D hit = new RaycastHit2D();
+            if (!positiveFace)
+                hit = Physics2D.Raycast(new Vector2(temp.x - 0.6f, temp.y), new Vector2(-1, 0), exStepDistance);   // 使用Raycast解决穿墙问题
+            else
+                hit = Physics2D.Raycast(new Vector2(temp.x + 0.6f, temp.y), new Vector2(1, 0), exStepDistance);
+            if (hit)
+            {// 仅通过Raycast判断还不能解决贴墙穿越的问题，需要在碰撞事件中进一步处理
+                tempStepDistance = hit.distance;            // 重新赋值瞬步距离
+            }
+            if (!positiveFace)
+                transform.position = new Vector3(-tempStepDistance + temp.x, temp.y, temp.z);    // 虽然可以瞬步，但要解决穿墙的BUG
+            else
+                transform.position = new Vector3(tempStepDistance + temp.x, temp.y, temp.z);
+            lastExStepTime = Time.time;                     // 重置瞬步使用时间
     }
 
-    private void TwiceAttack()
-    {// 第二段普攻
-        if (normalAtkCounter == 2 && Time.time - lastNormalAtkTime <= normalAtkInterval)
-        {
+    private void Run()
+    {
+        if (-rgb.velocity.x < maxRunSpeed && !positiveFace)    // 不能超过最大跑步速度
+            rgb.AddForce(new Vector2(-runForce_x, 0));
 
-        }
+        if (rgb.velocity.x < maxRunSpeed && positiveFace)
+            rgb.AddForce(new Vector2(runForce_x, 0));
+
+        sr.color = new Color(1, 0, 0);
+        releaseATime = Time.time;
+        releaseDTime = Time.time;
     }
 
-    private void EndAttack()
-    {// 第三段普攻
-        if (normalAtkCounter == 3 && Time.time - lastNormalAtkTime <= normalAtkInterval)
-        {
+    private void Walk()
+    {
+        if (-rgb.velocity.x < maxWalkSpeed && !positiveFace)              // 不能超过最大步行速度
+            rgb.AddForce(new Vector2(-walkForce_x, 0));
 
-        }
-    }
-
-    private void SpecialAttack()
-    {// 特殊攻击
-        if (Input.GetKeyDown(KeyCode.U))
-        {
-
-        }
+        if (rgb.velocity.x < maxWalkSpeed && positiveFace)
+            rgb.AddForce(new Vector2(walkForce_x, 0));
+        sr.color = originColor;                     // 若不在瞬步CD和跑步状态，显示原色
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -279,4 +214,5 @@ public class PlayerController : MonoBehaviour
             exStepEnabled = true;
         }
     }
+
 }
